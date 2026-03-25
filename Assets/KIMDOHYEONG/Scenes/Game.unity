@@ -1755,8 +1755,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: "\uBB3C\uBC94\uB4E4\uC744 \uD074\uB9AD\uD558\uC5EC \uBB3C\uB9AC\uCE58\uC138\uC694!\n\uBD81\uADF9\uACF0\uC740
-    \uC9C0\uCF1C\uC8FC\uC5B4\uC57C \uD569\uB2C8\uB2E4.\n\n\uBB3C\uBC94 = 1\uC810
-    \n\uC655\uAD00 \uBB3C\uBC94 = 3\uC810\n\uBD81\uADF9\uACF0 = -5\uC810"
+    \uC9C0\uCF1C\uC8FC\uC138\uC694!\n\n\uBB3C\uBC94 = 1\uC810 \n\uC655\uAD00 \uBB3C\uBC94
+    = 3\uC810\n\uBD81\uADF9\uACF0 = -5\uC810"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: b07342a0f4ee89d478ba99e997aded9c, type: 2}
   m_sharedMaterial: {fileID: 7486155668332566185, guid: b07342a0f4ee89d478ba99e997aded9c,
@@ -1875,12 +1875,12 @@ MonoBehaviour:
   - {fileID: 536519702}
   - {fileID: 497709266}
   gameDuration: 30
-  startAppearTime: 1
-  endAppearTime: 0.4
-  startSpawnDelay: 0.45
-  endSpawnDelay: 0.12
+  startAppearTime: 1.5
+  endAppearTime: 1
+  startSpawnDelay: 0.8
+  endSpawnDelay: 0.5
   startMaxSimultaneous: 1
-  endMaxSimultaneous: 3
+  endMaxSimultaneous: 2
   normalScore: 1
   bonusScore: 3
   trapPenalty: 5

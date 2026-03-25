@@ -16,23 +16,23 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float gameDuration = 30f;
 
     [Header("Difficulty Settings")]
-    // 초반: 두더지가 오래 보임
-    [SerializeField] private float startAppearTime = 0.9f;
+    // 초반 : 두더지가 오래 보임
+    [SerializeField] private float startAppearTime = 1.5f;
 
-    // 후반: 두더지가 짧게 보임
-    [SerializeField] private float endAppearTime = 0.25f;
+    // 후반 : 두더지가 짧게 보임
+    [SerializeField] private float endAppearTime = 1f;
 
-    // 초반: 다음 등장까지 간격
-    [SerializeField] private float startSpawnDelay = 0.45f;
+    // 초반 : 다음 등장까지 간격
+    [SerializeField] private float startSpawnDelay = 0.8f;
 
-    // 후반: 다음 등장까지 간격
-    [SerializeField] private float endSpawnDelay = 0.12f;
+    // 후반 : 다음 등장까지 간격
+    [SerializeField] private float endSpawnDelay = 0.5f;
 
     // 초반 최대 동시 등장 수
     [SerializeField] private int startMaxSimultaneous = 1;
 
     // 후반 최대 동시 등장 수
-    [SerializeField] private int endMaxSimultaneous = 3;
+    [SerializeField] private int endMaxSimultaneous = 2;
 
     [Header("Score Settings")]
     // 일반 두더지 점수
