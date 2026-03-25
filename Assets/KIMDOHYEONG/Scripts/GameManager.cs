@@ -1,49 +1,59 @@
 using System.Collections;
-using TMPro;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    [Header("Panels")]
-    // 시작 화면 패널
-    [SerializeField] private GameObject titlePanel;
+    [Header("Reference")]
+    // UI 전용 매니저
+    [SerializeField] private UIManager uiManager;
 
-    // 게임 화면 패널
-    [SerializeField] private GameObject gamePanel;
-
-    // 결과 화면 패널
-    [SerializeField] private GameObject resultPanel;
-
-    [Header("Game UI")]
-    // 현재 점수 텍스트
-    [SerializeField] private TMP_Text scoreText;
-
-    // 최고 점수 텍스트 (게임 중 표시)
-    [SerializeField] private TMP_Text bestScoreText;
-
-    // 남은 시간 텍스트
-    [SerializeField] private TMP_Text timeText;
-
-    [Header("Result UI")]
-    // 결과창의 최종 점수 텍스트
-    [SerializeField] private TMP_Text finalScoreText;
-
-    // 결과창의 최고 점수 텍스트
-    [SerializeField] private TMP_Text resultBestScoreText;
-
-    [Header("Holes")]
-    // 9개의 Hole
+    // 구멍 9개
     [SerializeField] private MoleHole[] holes;
 
     [Header("Game Settings")]
-    // 전체 플레이 시간
+    // 전체 게임 시간
     [SerializeField] private float gameDuration = 30f;
 
-    // 적이 화면에 머무는 시간
-    [SerializeField] private float appearTime = 1.0f;
+    [Header("Difficulty Settings")]
+    // 초반: 두더지가 오래 보임
+    [SerializeField] private float startAppearTime = 0.9f;
 
-    // 다음 적이 나오기 전까지 대기 시간
-    [SerializeField] private float delayTime = 0.5f;
+    // 후반: 두더지가 짧게 보임
+    [SerializeField] private float endAppearTime = 0.25f;
+
+    // 초반: 다음 등장까지 간격
+    [SerializeField] private float startSpawnDelay = 0.45f;
+
+    // 후반: 다음 등장까지 간격
+    [SerializeField] private float endSpawnDelay = 0.12f;
+
+    // 초반 최대 동시 등장 수
+    [SerializeField] private int startMaxSimultaneous = 1;
+
+    // 후반 최대 동시 등장 수
+    [SerializeField] private int endMaxSimultaneous = 3;
+
+    [Header("Score Settings")]
+    // 일반 두더지 점수
+    [SerializeField] private int normalScore = 1;
+
+    // 보너스 두더지 점수
+    [SerializeField] private int bonusScore = 3;
+
+    // 함정 두더지 패널티
+    [SerializeField] private int trapPenalty = 2;
+
+    [Header("Spawn Chance")]
+    // 일반 등장 확률
+    [Range(0f, 1f)]
+    [SerializeField] private float normalChance = 0.7f;
+
+    // 보너스 등장 확률
+    [Range(0f, 1f)]
+    [SerializeField] private float bonusChance = 0.2f;
+
+    // 남는 확률은 함정
 
     // 현재 점수
     private int score = 0;
@@ -54,13 +64,13 @@ public class GameManager : MonoBehaviour
     // 남은 시간
     private float remainTime = 0f;
 
-    // 현재 게임 진행 중인지
+    // 게임 진행 여부
     private bool isPlaying = false;
 
-    // 두더지 반복 등장 코루틴 저장용
-    private Coroutine moleRoutineCoroutine;
+    // 두더지 생성 루프
+    private Coroutine moleRoutine;
 
-    // 최고 점수 저장용 키
+    // 최고 점수 저장 키
     private const string BEST_SCORE_KEY = "WhackMoleBestScore";
 
     private void Start()
@@ -68,136 +78,123 @@ public class GameManager : MonoBehaviour
         // 저장된 최고 점수 불러오기
         bestScore = PlayerPrefs.GetInt(BEST_SCORE_KEY, 0);
 
-        // 각 Hole에 GameManager 연결 + 초기화
+        // 각 Hole 초기화
         for (int i = 0; i < holes.Length; i++)
         {
-            holes[i].Init(this);
+            if (holes[i] != null)
+            {
+                holes[i].Init(this);
+            }
         }
 
         // 시작 시 타이틀 화면 표시
-        ShowTitle();
+        uiManager.ShowTitlePanel();
+        uiManager.UpdateGameUI(0, bestScore, gameDuration);
     }
 
     private void Update()
     {
-        // 게임 중이 아니면 시간 감소 안 함
+        // 게임 중일 때만 시간 감소
         if (!isPlaying)
             return;
 
-        // 남은 시간 감소
         remainTime -= Time.deltaTime;
 
-        // 0보다 작아지지 않도록
         if (remainTime < 0f)
             remainTime = 0f;
 
-        // 게임 UI 갱신
-        UpdateGameUI();
+        // UI 갱신은 UIManager에게 맡김
+        uiManager.UpdateGameUI(score, bestScore, remainTime);
 
-        // 시간이 다 되면 게임 종료
+        // 시간이 다 되면 종료
         if (remainTime <= 0f)
         {
             EndGame();
         }
     }
 
-    // 타이틀 화면 표시
-    public void ShowTitle()
-    {
-        // 게임 중지 상태
-        isPlaying = false;
-
-        // 돌고 있던 코루틴이 있으면 정지
-        if (moleRoutineCoroutine != null)
-        {
-            StopCoroutine(moleRoutineCoroutine);
-            moleRoutineCoroutine = null;
-        }
-
-        // 남아있는 적 전부 숨기기
-        HideAllMoles();
-
-        // 패널 전환
-        titlePanel.SetActive(true);
-        gamePanel.SetActive(false);
-        resultPanel.SetActive(false);
-    }
-
-    // 시작 버튼 또는 재시작 버튼이 눌리면 호출
+    // -----------------------------
+    // 시작 버튼용
+    // -----------------------------
     public void StartGame()
     {
-        // 현재 점수 초기화
         score = 0;
-
-        // 남은 시간 초기화
         remainTime = gameDuration;
-
-        // 게임 진행 시작
         isPlaying = true;
 
-        // 시작 전에 적 전부 숨김
         HideAllMoles();
 
-        // 게임 UI 먼저 갱신
-        UpdateGameUI();
+        uiManager.ShowGamePanel();
+        uiManager.UpdateGameUI(score, bestScore, remainTime);
 
-        // 패널 전환
-        titlePanel.SetActive(false);
-        gamePanel.SetActive(true);
-        resultPanel.SetActive(false);
-
-        // 혹시 기존 코루틴이 남아있다면 정지
-        if (moleRoutineCoroutine != null)
-        {
-            StopCoroutine(moleRoutineCoroutine);
-        }
-
-        // 두더지 등장 반복 시작
-        moleRoutineCoroutine = StartCoroutine(MoleRoutine());
+        StartMoleRoutine();
     }
 
-    // 결과창에서 다시 시작 버튼용
+    // -----------------------------
+    // 재시작 버튼용
+    // -----------------------------
     public void RestartGame()
     {
         StartGame();
     }
 
-    // 점수 추가
-    public void AddScore(int amount)
+    // -----------------------------
+    // 타이틀로 버튼용
+    // -----------------------------
+    public void ReturnToTitle()
     {
-        // 게임 중일 때만 점수 처리
+        isPlaying = false;
+
+        StopMoleRoutine();
+        HideAllMoles();
+
+        uiManager.ShowTitlePanel();
+        uiManager.UpdateGameUI(0, bestScore, gameDuration);
+    }
+
+    // -----------------------------
+    // 두더지 클릭 시 MoleHole이 호출
+    // -----------------------------
+    public void OnMoleClicked(MoleHole.MoleType type)
+    {
         if (!isPlaying)
             return;
 
-        score += amount;
+        switch (type)
+        {
+            case MoleHole.MoleType.Normal:
+                score += normalScore;
+                break;
 
-        // 음수 방지
+            case MoleHole.MoleType.Bonus:
+                score += bonusScore;
+                break;
+
+            case MoleHole.MoleType.Trap:
+                score -= trapPenalty;
+                break;
+        }
+
         if (score < 0)
             score = 0;
 
-        UpdateGameUI();
+        uiManager.UpdateGameUI(score, bestScore, remainTime);
     }
 
+    // -----------------------------
     // 게임 종료
+    // -----------------------------
     private void EndGame()
     {
-        // 중복 종료 방지
         if (!isPlaying)
             return;
 
         isPlaying = false;
 
-        // 코루틴 정지
-        if (moleRoutineCoroutine != null)
-        {
-            StopCoroutine(moleRoutineCoroutine);
-            moleRoutineCoroutine = null;
-        }
-
-        // 모든 적 숨기기
+        StopMoleRoutine();
         HideAllMoles();
 
-        // 최고 점수 갱신 및 저장
+        // 최고 점수 저장
         if (score > bestScore)
         {
             bestScore = score;
@@ -205,59 +202,159 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.Save();
         }
 
-        // 결과창 텍스트 갱신
-        finalScoreText.text = "Final Score : " + score;
-        resultBestScoreText.text = "Best Score : " + bestScore;
-
-        // 결과 패널 표시
-        titlePanel.SetActive(false);
-        gamePanel.SetActive(false);
-        resultPanel.SetActive(true);
+        uiManager.UpdateResultUI(score, bestScore);
+        uiManager.ShowResultPanel();
     }
 
-    // 게임 중 UI 갱신
-    private void UpdateGameUI()
-    {
-        scoreText.text = "Score : " + score;
-        bestScoreText.text = "Best : " + bestScore;
-        timeText.text = "Time : " + Mathf.CeilToInt(remainTime);
-    }
-
-    // 모든 Hole의 적 숨기기
+    // -----------------------------
+    // 모든 두더지 숨기기
+    // -----------------------------
     private void HideAllMoles()
     {
         for (int i = 0; i < holes.Length; i++)
         {
-            holes[i].Hide();
+            if (holes[i] != null)
+            {
+                holes[i].Hide();
+            }
         }
     }
 
-    // 적이 랜덤 위치에서 반복 등장하는 코루틴
+    // -----------------------------
+    // 두더지 등장 루틴 시작
+    // -----------------------------
+    private void StartMoleRoutine()
+    {
+        StopMoleRoutine();
+        moleRoutine = StartCoroutine(MoleRoutine());
+    }
+
+    private void StopMoleRoutine()
+    {
+        if (moleRoutine != null)
+        {
+            StopCoroutine(moleRoutine);
+            moleRoutine = null;
+        }
+    }
+
+    // -----------------------------
+    // 현재 진행도(0~1) 구하기
+    // 0 = 초반, 1 = 후반
+    // -----------------------------
+    private float GetProgress()
+    {
+        return 1f - (remainTime / gameDuration);
+    }
+
+    // 현재 두더지 표시 시간
+    private float GetCurrentAppearTime()
+    {
+        float progress = GetProgress();
+        return Mathf.Lerp(startAppearTime, endAppearTime, progress);
+    }
+
+    // 현재 다음 등장까지 간격
+    private float GetCurrentSpawnDelay()
+    {
+        float progress = GetProgress();
+        return Mathf.Lerp(startSpawnDelay, endSpawnDelay, progress);
+    }
+
+    // 현재 최대 동시 등장 수
+    private int GetCurrentMaxSimultaneous()
+    {
+        float progress = GetProgress();
+        float value = Mathf.Lerp(startMaxSimultaneous, endMaxSimultaneous, progress);
+        return Mathf.RoundToInt(value);
+    }
+
+    // -----------------------------
+    // 타입 랜덤 결정
+    // -----------------------------
+    private MoleHole.MoleType GetRandomType()
+    {
+        float rand = Random.value;
+
+        if (rand < normalChance)
+            return MoleHole.MoleType.Normal;
+        else if (rand < normalChance + bonusChance)
+            return MoleHole.MoleType.Bonus;
+        else
+            return MoleHole.MoleType.Trap;
+    }
+
+    // -----------------------------
+    // 현재 비어 있는 Hole 목록 가져오기
+    // -----------------------------
+    private List<MoleHole> GetHiddenHoles()
+    {
+        List<MoleHole> hiddenHoles = new List<MoleHole>();
+
+        for (int i = 0; i < holes.Length; i++)
+        {
+            if (holes[i] != null && !holes[i].IsVisible)
+            {
+                hiddenHoles.Add(holes[i]);
+            }
+        }
+
+        return hiddenHoles;
+    }
+
+    // -----------------------------
+    // 구멍 하나를 일정 시간 보여주고 숨기기
+    // -----------------------------
+    private IEnumerator ShowAndHideHole(MoleHole hole, MoleHole.MoleType type, float appearTime)
+    {
+        hole.Show(type);
+
+        yield return new WaitForSeconds(appearTime);
+
+        if (hole.IsVisible)
+        {
+            hole.Hide();
+        }
+    }
+
+    // -----------------------------
+    // 두더지 생성 루프
+    // -----------------------------
     private IEnumerator MoleRoutine()
     {
         while (isPlaying)
         {
-            // 랜덤 구멍 선택
-            int randomIndex = Random.Range(0, holes.Length);
-            MoleHole hole = holes[randomIndex];
+            float currentAppearTime = GetCurrentAppearTime();
+            float currentSpawnDelay = GetCurrentSpawnDelay();
+            int currentMaxSimultaneous = GetCurrentMaxSimultaneous();
 
-            // 현재 안 보이는 구멍이면 적 등장
-            if (!hole.IsVisible)
+            // 비어 있는 구멍 목록
+            List<MoleHole> hiddenHoles = GetHiddenHoles();
+
+            if (hiddenHoles.Count == 0)
             {
-                hole.Show();
-
-                // 일정 시간 동안 보이기
-                yield return new WaitForSeconds(appearTime);
-
-                // 아직 클릭 안 됐다면 숨기기
-                if (hole.IsVisible)
-                {
-                    hole.Hide();
-                }
+                yield return new WaitForSeconds(currentSpawnDelay);
+                continue;
             }
 
-            // 다음 적 나오기 전 잠깐 대기
-            yield return new WaitForSeconds(delayTime);
+            // 이번 턴에 몇 마리 나올지 결정
+            int spawnCount = Random.Range(1, currentMaxSimultaneous + 1);
+            spawnCount = Mathf.Min(spawnCount, hiddenHoles.Count);
+
+            for (int i = 0; i < spawnCount; i++)
+            {
+                int randomIndex = Random.Range(0, hiddenHoles.Count);
+                MoleHole selectedHole = hiddenHoles[randomIndex];
+
+                // 중복 선택 방지
+                hiddenHoles.RemoveAt(randomIndex);
+
+                MoleHole.MoleType randomType = GetRandomType();
+
+                StartCoroutine(ShowAndHideHole(selectedHole, randomType, currentAppearTime));
+            }
+
+            yield return new WaitForSeconds(currentSpawnDelay);
         }
     }
 }
