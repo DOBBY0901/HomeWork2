@@ -4,34 +4,34 @@ using UnityEngine;
 public class UIManager : MonoBehaviour
 {
     [Header("Panels")]
-    // ���� ȭ�� �г�
+    // 타이틀 패널
     [SerializeField] private GameObject titlePanel;
-    // ���� ȭ�� �г�
+    // 설명 패널
     [SerializeField] private GameObject descPanel;
-    // ���� ���� ȭ�� �г�
+    // 게임 패널
     [SerializeField] private GameObject gamePanel;
-    // ���� ���� �� ��� ȭ�� �г�
+    // 게임결과 패널
     [SerializeField] private GameObject resultPanel;
 
     [Header("Game UI")]
-    // ���� �� ���� ����
+    // 현재 점수 텍스트
     [SerializeField] private TMP_Text scoreText;
 
-    // ���� �� �ְ� ����
+    // 최고 점수 텍스트    
     [SerializeField] private TMP_Text bestScoreText;
 
-    // ���� �� ���� �ð�
+    // 시간 텍스트
     [SerializeField] private TMP_Text timeText;
 
     [Header("Result UI")]
-    // ���â ���� ����
+    // 최종 점수 텍스트
     [SerializeField] private TMP_Text finalScoreText;
 
-    // ���â �ְ� ����
+    // 최종 최고 점수 텍스트
     [SerializeField] private TMP_Text resultBestScoreText;
 
     // -----------------------------
-    // Ÿ��Ʋ ȭ�� ǥ��
+    // 타이틀 패널 출력
     // -----------------------------
     public void ShowTitlePanel()
     {
@@ -43,7 +43,7 @@ public class UIManager : MonoBehaviour
 
 
     // -----------------------------
-    // ���� ȭ�� ǥ��
+    // 설명 패널 출력
     // -----------------------------
     public void ShowDescPanel()
     {
@@ -54,7 +54,7 @@ public class UIManager : MonoBehaviour
     }
 
     // -----------------------------
-    // ���� ȭ�� ǥ��
+    // 게임 패널 출력
     // -----------------------------
     public void ShowGamePanel()
     {
@@ -64,7 +64,7 @@ public class UIManager : MonoBehaviour
     }
 
     // -----------------------------
-    // ��� ȭ�� ǥ��
+    // 결과 패널 출력
     // -----------------------------
     public void ShowResultPanel()
     {
@@ -74,7 +74,7 @@ public class UIManager : MonoBehaviour
     }
 
     // -----------------------------
-    // ���� �� UI ����
+    // UI 갱신 (점수, 최고 점수, 남은 시간)
     // -----------------------------
     public void UpdateGameUI(int score, int bestScore, float remainTime)
     {
@@ -84,7 +84,7 @@ public class UIManager : MonoBehaviour
     }
 
     // -----------------------------
-    // ���â UI ����
+    // 결과 UI 갱신 (최종 점수, 최종 최고 점수)
     // -----------------------------
     public void UpdateResultUI(int finalScore, int bestScore)
     {
